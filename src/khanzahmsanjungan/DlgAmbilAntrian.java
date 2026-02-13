@@ -111,7 +111,7 @@ public class DlgAmbilAntrian extends widget.Dialog {
 
         panelTengah.setLayout(new java.awt.GridLayout(0, 2));
 
-        HurufA.setText("ANTRIAN A");
+        HurufA.setText("PASIEN BPJS");
         HurufA.setFont(new java.awt.Font("Inter", 1, 36)); // NOI18N
         HurufA.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -120,7 +120,7 @@ public class DlgAmbilAntrian extends widget.Dialog {
         });
         panelTengah.add(HurufA);
 
-        HurufB.setText("ANTRIAN B");
+        HurufB.setText("PASIEN P2KM");
         HurufB.setFont(new java.awt.Font("Inter", 1, 36)); // NOI18N
         HurufB.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -129,7 +129,7 @@ public class DlgAmbilAntrian extends widget.Dialog {
         });
         panelTengah.add(HurufB);
 
-        HurufC.setText("ANTRIAN C");
+        HurufC.setText("PASIEN UMUM");
         HurufC.setFont(new java.awt.Font("Inter", 1, 36)); // NOI18N
         HurufC.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -322,13 +322,13 @@ public class DlgAmbilAntrian extends widget.Dialog {
         for (String huruf : PREFIXHURUFAKTIF) {
             switch (huruf) {
                 case "A":
-                    HurufA.setText("ANTRIAN A (" + Sequel.cariIsiSmc("select ifnull(max(nomor), 'A000') from antriloketcetak_smc where tanggal = current_date() and left(nomor, 1) = 'A'") + ")");
+                    HurufA.setText("PASIEN BPJS (" + Sequel.cariIsiSmc("select ifnull(max(nomor), 'A000') from antriloketcetak_smc where tanggal = current_date() and left(nomor, 1) = 'A'") + ")");
                     break;
                 case "B":
-                    HurufB.setText("ANTRIAN B (" + Sequel.cariIsiSmc("select ifnull(max(nomor), 'B000') from antriloketcetak_smc where tanggal = current_date() and left(nomor, 1) = 'B'") + ")");
+                    HurufB.setText("PASIEN P2KM (" + Sequel.cariIsiSmc("select ifnull(max(nomor), 'B000') from antriloketcetak_smc where tanggal = current_date() and left(nomor, 1) = 'B'") + ")");
                     break;
                 case "C":
-                    HurufC.setText("ANTRIAN C (" + Sequel.cariIsiSmc("select ifnull(max(nomor), 'C000') from antriloketcetak_smc where tanggal = current_date() and left(nomor, 1) = 'C'") + ")");
+                    HurufC.setText("PASIEN UMUM (" + Sequel.cariIsiSmc("select ifnull(max(nomor), 'C000') from antriloketcetak_smc where tanggal = current_date() and left(nomor, 1) = 'C'") + ")");
                     break;
                 case "D":
                     HurufD.setText("ANTRIAN D (" + Sequel.cariIsiSmc("select ifnull(max(nomor), 'D000') from antriloketcetak_smc where tanggal = current_date() and left(nomor, 1) = 'D'") + ")");

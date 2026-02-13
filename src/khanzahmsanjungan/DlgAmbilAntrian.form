@@ -66,7 +66,7 @@
       <SubComponents>
         <Component class="widget.MenuButton" name="HurufA">
           <Properties>
-            <Property name="text" type="java.lang.String" value="ANTRIAN A"/>
+            <Property name="text" type="java.lang.String" value="PASIEN BPJS"/>
             <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
               <Font name="Inter" size="36" style="1"/>
             </Property>
@@ -77,7 +77,7 @@
         </Component>
         <Component class="widget.MenuButton" name="HurufB">
           <Properties>
-            <Property name="text" type="java.lang.String" value="ANTRIAN B"/>
+            <Property name="text" type="java.lang.String" value="PASIEN P2KM"/>
             <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
               <Font name="Inter" size="36" style="1"/>
             </Property>
@@ -88,7 +88,7 @@
         </Component>
         <Component class="widget.MenuButton" name="HurufC">
           <Properties>
-            <Property name="text" type="java.lang.String" value="ANTRIAN C"/>
+            <Property name="text" type="java.lang.String" value="PASIEN UMUM"/>
             <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
               <Font name="Inter" size="36" style="1"/>
             </Property>

@@ -87,7 +87,6 @@ public class HalamanUtama extends javax.swing.JFrame {
         btnMobilejkn = new widget.MenuButton();
         btnSatusehat = new widget.MenuButton();
         panelBawah = new widget.Panel();
-        judul = new widget.Label();
         versi = new widget.Label();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
@@ -100,7 +99,7 @@ public class HalamanUtama extends javax.swing.JFrame {
         panelAtas.setPreferredSize(new java.awt.Dimension(500, 100));
         panelAtas.setLayout(new java.awt.FlowLayout(java.awt.FlowLayout.CENTER, 0, 10));
 
-        flatLabel1.setIcon(new javax.swing.ImageIcon(getClass().getResource("/picture/smc-lg.png"))); // NOI18N
+        flatLabel1.setIcon(new javax.swing.ImageIcon(getClass().getResource("/picture/logocokro (2).png"))); // NOI18N
         panelAtas.add(flatLabel1);
 
         getContentPane().add(panelAtas, java.awt.BorderLayout.PAGE_START);
@@ -193,12 +192,6 @@ public class HalamanUtama extends javax.swing.JFrame {
 
         panelBawah.setLayout(new java.awt.BorderLayout());
 
-        judul.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        judul.setText("ANJUNGAN PASIEN MANDIRI");
-        judul.setFont(new java.awt.Font("Inter", 1, 36)); // NOI18N
-        judul.setPreferredSize(new java.awt.Dimension(750, 40));
-        panelBawah.add(judul, java.awt.BorderLayout.CENTER);
-
         versi.setForeground(new java.awt.Color(150, 155, 159));
         versi.setHorizontalAlignment(javax.swing.SwingConstants.TRAILING);
         versi.setText("Build 2025-08-29 Patch 1      ");
@@ -221,16 +214,6 @@ public class HalamanUtama extends javax.swing.JFrame {
         bpjs.setLocationRelativeTo(getContentPane());
         bpjs.setVisible(true);
     }//GEN-LAST:event_btnSEPKontrolActionPerformed
-
-    private void btnDaftarpoliActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnDaftarpoliActionPerformed
-        if (umum == null) {
-            umum = new DlgCekDataPasien(this, false);
-        }
-        umum.setFlag(DlgCekDataPasien.REGIST_MANDIRI);
-        umum.setSize(getContentPane().getSize());
-        umum.setLocationRelativeTo(getContentPane());
-        umum.setVisible(true);
-    }//GEN-LAST:event_btnDaftarpoliActionPerformed
 
     private void btnBookingActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnBookingActionPerformed
         if (!koneksiDB.BOOKINGLANGSUNGREGISTRASI()) {
@@ -312,6 +295,16 @@ public class HalamanUtama extends javax.swing.JFrame {
         antrianfarmasi.setVisible(true);
     }//GEN-LAST:event_btnAntrianFarmasiActionPerformed
 
+    private void btnDaftarpoliActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnDaftarpoliActionPerformed
+        if (umum == null) {
+            umum = new DlgCekDataPasien(this, false);
+        }
+        umum.setFlag(DlgCekDataPasien.REGIST_MANDIRI);
+        umum.setSize(getContentPane().getSize());
+        umum.setLocationRelativeTo(getContentPane());
+        umum.setVisible(true);
+    }//GEN-LAST:event_btnDaftarpoliActionPerformed
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private widget.MenuButton btnAntrian;
     private widget.MenuButton btnAntrianFarmasi;
@@ -323,7 +316,6 @@ public class HalamanUtama extends javax.swing.JFrame {
     private widget.MenuButton btnSEPPertama;
     private widget.MenuButton btnSatusehat;
     private com.formdev.flatlaf.extras.components.FlatLabel flatLabel1;
-    private widget.Label judul;
     private widget.Panel panelAtas;
     private widget.Panel panelBawah;
     private widget.Panel panelTengah;
