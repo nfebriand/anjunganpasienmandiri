@@ -1,0 +1,2 @@
+@echo off
+java -jar --add-exports java.desktop/com.sun.java.swing.plaf.windows=ALL-UNNAMED -jar  -Xms1024m -Xmx4096m -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:+UseStringDeduplication anjunganmandiri2.jar
