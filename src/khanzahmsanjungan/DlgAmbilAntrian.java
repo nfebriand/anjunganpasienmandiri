@@ -169,7 +169,7 @@ public class DlgAmbilAntrian extends widget.Dialog {
         switch (prefix) {
             case "A":
                 if (Sequel.executeRawSmc(
-                    "insert into antriloketcetak_smc (nomor, tanggal, jam) values (concat('A', lpad(?, greatest(length(substring(nomor, 2)), 3), '0')), current_date(), current_time())",
+                    "insert into antriloketcetak_smc (nomor, tanggal, jam, status) values (concat('A', lpad(?, greatest(length(substring(nomor, 2)), 3), '0')), current_date(), current_time(), '0')",
                     String.valueOf(Integer.parseInt(HurufA.getText().substring(HurufA.getText().indexOf("(") + 2, HurufA.getText().length() - 1)) + 1)
                 )) {
                     param.put("logo", Sequel.cariGambar("select logo from setting"));
