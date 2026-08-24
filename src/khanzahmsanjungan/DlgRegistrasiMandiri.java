@@ -1,11 +1,16 @@
 package khanzahmsanjungan;
 
+import AESsecurity.EnkripsiAES;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import fungsi.koneksiDB;
 import fungsi.sekuel;
 import fungsi.validasi;
 import java.awt.Cursor;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.io.File;
+import java.io.FileReader;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -16,7 +21,7 @@ import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-import javax.swing.JOptionPane;
+import java.util.stream.StreamSupport;
 
 public class DlgRegistrasiMandiri extends widget.Dialog {
 
@@ -25,9 +30,8 @@ public class DlgRegistrasiMandiri extends widget.Dialog {
     private final validasi Valid = new validasi();
     private final DlgCariPoli poli;
     private final DlgCariDokter dokter;
-    private final String URUTNOREG = koneksiDB.URUTNOREG(),
-        PRINTERBARCODE = koneksiDB.PRINTER_BARCODE(),
-        KODEPOLIEKSEKUTIF = koneksiDB.KODEPOLIEKSEKUTIF();
+    private final String URUTNOREG = koneksiDB.URUTNOREG();
+    private int printJumlahBarcode = 0;
     private String hari = "",
         noRawat = "",
         noReg = "",
@@ -47,13 +51,16 @@ public class DlgRegistrasiMandiri extends widget.Dialog {
         instansiKontak = "",
         poliBiaya = "",
         poliBiayaLama = "",
-        umurPasien = "";
+        umurPasien = "",
+        printerBarcode = "",
+        kodePoliEksekutif = "";
 
     public DlgRegistrasiMandiri(java.awt.Frame parent, boolean model) {
         super(parent, model);
         dokter = new DlgCariDokter(parent, model);
         poli = new DlgCariPoli(parent, model);
         initComponents();
+        loadPengaturanAPM();
 
         try (ResultSet rs = koneksi.prepareStatement("select nama_instansi, alamat_instansi, kabupaten, kontak from setting").executeQuery()) {
             if (rs.next()) {
@@ -64,29 +71,6 @@ public class DlgRegistrasiMandiri extends widget.Dialog {
             }
         } catch (SQLException e) {
             System.out.println("Notif : " + e);
-        }
-
-        if (KODEPOLIEKSEKUTIF.isBlank()) {
-            buttonCariPoli.setVisible(true);
-            poli.addWindowListener(new WindowAdapter() {
-                @Override
-                public void windowClosed(WindowEvent e) {
-                    if (poli.hasSelection()) {
-                        namaDokter.setText("");
-                        kdDokter = "";
-                        kdPoli = poli.getSelectedRow(0).toString();
-                        namaPoli.setText(poli.getSelectedRow(1).toString());
-                        poliBiaya = poli.getSelectedRow(2).toString();
-                        poliBiayaLama = poli.getSelectedRow(3).toString();
-                    }
-                }
-            });
-        } else {
-            buttonCariPoli.setVisible(false);
-            kdPoli = KODEPOLIEKSEKUTIF;
-            namaPoli.setText(Sequel.cariIsiSmc("select poliklinik.nm_poli from poliklinik where poliklinik.kd_poli = ?", kdPoli));
-            poliBiaya = Sequel.cariIsiSmc("select poliklinik.registrasi from poliklinik where poliklinik.kd_poli = ?", kdPoli);
-            poliBiayaLama = Sequel.cariIsiSmc("select poliklinik.registrasilama from poliklinik where poliklinik.kd_poli = ?", kdPoli);
         }
 
         dokter.addWindowListener(new WindowAdapter() {
@@ -133,6 +117,11 @@ public class DlgRegistrasiMandiri extends widget.Dialog {
         btnSimpan = new widget.Button();
         btnKeluar = new widget.Button();
 
+        addWindowListener(new java.awt.event.WindowAdapter() {
+            public void windowActivated(java.awt.event.WindowEvent evt) {
+                formWindowActivated(evt);
+            }
+        });
         getContentPane().setLayout(new java.awt.GridBagLayout());
 
         panelAtas.setPreferredSize(new java.awt.Dimension(1, 35));
@@ -196,7 +185,6 @@ public class DlgRegistrasiMandiri extends widget.Dialog {
         buttonCariPoli.setBackground(new java.awt.Color(240, 249, 255));
         buttonCariPoli.setBorder(null);
         buttonCariPoli.setIcon(new javax.swing.ImageIcon(getClass().getResource("/48x48/pilih.png"))); // NOI18N
-        buttonCariPoli.setMnemonic('S');
         buttonCariPoli.setToolTipText("Alt+S");
         buttonCariPoli.setFont(new java.awt.Font("Inter", 0, 18)); // NOI18N
         buttonCariPoli.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
@@ -223,7 +211,6 @@ public class DlgRegistrasiMandiri extends widget.Dialog {
         buttonCariDokter.setBackground(new java.awt.Color(240, 249, 255));
         buttonCariDokter.setBorder(null);
         buttonCariDokter.setIcon(new javax.swing.ImageIcon(getClass().getResource("/48x48/pilih.png"))); // NOI18N
-        buttonCariDokter.setMnemonic('S');
         buttonCariDokter.setToolTipText("Alt+S");
         buttonCariDokter.setFont(new java.awt.Font("Inter", 0, 18)); // NOI18N
         buttonCariDokter.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
@@ -300,7 +287,6 @@ public class DlgRegistrasiMandiri extends widget.Dialog {
         panelBawah.setLayout(new java.awt.FlowLayout(java.awt.FlowLayout.CENTER, 10, 0));
 
         btnSimpan.setIcon(new javax.swing.ImageIcon(getClass().getResource("/48x48/konfirmasi.png"))); // NOI18N
-        btnSimpan.setMnemonic('S');
         btnSimpan.setText("KONFIRMASI");
         btnSimpan.setToolTipText("Alt+S");
         btnSimpan.setPreferredSize(new java.awt.Dimension(300, 60));
@@ -314,7 +300,6 @@ public class DlgRegistrasiMandiri extends widget.Dialog {
         btnKeluar.setBackground(new java.awt.Color(255, 255, 255));
         btnKeluar.setForeground(new java.awt.Color(255, 33, 32));
         btnKeluar.setIcon(new javax.swing.ImageIcon(getClass().getResource("/48x48/exit.png"))); // NOI18N
-        btnKeluar.setMnemonic('K');
         btnKeluar.setText("Batal");
         btnKeluar.setToolTipText("Alt+K");
         btnKeluar.setFont(new java.awt.Font("Inter", 0, 18)); // NOI18N
@@ -345,15 +330,15 @@ public class DlgRegistrasiMandiri extends widget.Dialog {
 
     private void btnSimpanActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSimpanActionPerformed
         if (noRM.getText().isBlank()) {
-            JOptionPane.showMessageDialog(null, "No. RM Kosong..!!");
+            Valid.popupInfoDialog("No. RM Kosong..!!");
         } else if (kdPoli.isBlank()) {
-            JOptionPane.showMessageDialog(null, "Pilih poli terlebih dahulu..!!");
+            Valid.popupInfoDialog("Pilih poli terlebih dahulu..!!");
         } else if (kdDokter.isBlank()) {
-            JOptionPane.showMessageDialog(null, "Pilih Dokter terlebih dahulu..!!");
+            Valid.popupInfoDialog("Pilih Dokter terlebih dahulu..!!");
         } else if (Sequel.cariExistsSmc("select * from reg_periksa where kd_pj = 'A09' and no_rkm_medis = ? and tgl_registrasi = current_date() and kd_poli = ? and kd_dokter = ?", noRM.getText(), kdPoli, kdDokter)) {
-            JOptionPane.showMessageDialog(null, "Maaf, anda sudah terdaftar pada hari ini dengan dokter dan poli yang sama..!!");
+            Valid.popupInfoDialog("Maaf, anda sudah terdaftar pada hari ini dengan dokter dan poli yang sama..!!");
         } else if (Sequel.cariExistsSmc("select * from reg_periksa join kamar_inap on reg_periksa.no_rawat = kamar_inap.no_rawat where kamar_inap.stts_pulang = '-' and reg_periksa.no_rkm_medis = ?", noRM.getText())) {
-            JOptionPane.showMessageDialog(null, "Maaf, pasien sedang dalam masa perawatan di rawat inap..!!");
+            Valid.popupInfoDialog("Maaf, pasien sedang dalam masa perawatan di rawat inap..!!");
         } else {
             this.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
             int next = 0, retries = 5;
@@ -362,7 +347,7 @@ public class DlgRegistrasiMandiri extends widget.Dialog {
             String waktu = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date());
 
             do {
-                setNomorRegistrasi();
+                autonomor();
                 System.out.print("Mencoba mendaftarkan pasien dengan no. rawat [" + noRawat + "] : ");
                 biayaReg = statusPoli.equals("Lama") ? poliBiayaLama : poliBiaya;
 
@@ -387,10 +372,10 @@ public class DlgRegistrasiMandiri extends widget.Dialog {
                 param.put("kotars", instansiKota);
                 param.put("kontakrs", instansiKontak);
                 param.put("norawat", noRawat);
-                Valid.printReportSmc("rptBarcodeRawatAPM.jasper", "report", "::[ Barcode Perawatan ]::", param, koneksiDB.PRINTER_BARCODE(), koneksiDB.PRINTJUMLAHBARCODE());
-                JOptionPane.showMessageDialog(null, "Berhasil!");
+                Valid.printReportSmc("rptBarcodeRawatAPM.jasper", "report", "::[ Barcode Perawatan ]::", param, printerBarcode, printJumlahBarcode);
+                Valid.popupInfoDialog("Berhasil!");
             } else {
-                JOptionPane.showMessageDialog(null, "Pendaftaran gagal..!!\nSilahkan coba kembali.");
+                Valid.popupInfoDialog("Pendaftaran gagal..!!\nSilahkan coba kembali.");
             }
             this.setCursor(Cursor.getDefaultCursor());
             btnKeluarActionPerformed(null);
@@ -407,9 +392,13 @@ public class DlgRegistrasiMandiri extends widget.Dialog {
     private void buttonCariPoliActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_buttonCariPoliActionPerformed
         poli.setSize(getContentPane().getSize());
         poli.setLocationRelativeTo(getContentPane());
-        poli.tampil(hari);
+        poli.setHari(hari);
         poli.setVisible(true);
     }//GEN-LAST:event_buttonCariPoliActionPerformed
+
+    private void formWindowActivated(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowActivated
+        loadPengaturanAPM();
+    }//GEN-LAST:event_formWindowActivated
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private widget.Button btnKeluar;
@@ -482,7 +471,7 @@ public class DlgRegistrasiMandiri extends widget.Dialog {
         }
     }
 
-    private void setNomorRegistrasi() {
+    private void autonomor() {
         switch (URUTNOREG) {
             case "poli":
                 noReg = Sequel.cariIsiSmc("select lpad(ifnull(max(convert(no_reg, signed)), 0) + 1, 3, '0') from reg_periksa where kd_poli = ? and tgl_registrasi = current_date()", kdPoli);
@@ -529,7 +518,7 @@ public class DlgRegistrasiMandiri extends widget.Dialog {
             }
 
         } catch (Exception e) {
-            System.out.println("Notifikasi : " + e);
+            System.out.println("Notif : " + e);
         }
     }
 
@@ -538,7 +527,7 @@ public class DlgRegistrasiMandiri extends widget.Dialog {
         noRawat = "";
         noReg = "";
         kdDokter = "";
-        kdPoli = KODEPOLIEKSEKUTIF.isBlank() ? "" : KODEPOLIEKSEKUTIF;
+        kdPoli = kodePoliEksekutif.isBlank() ? "" : kodePoliEksekutif;
         biayaReg = "";
         statusDaftar = "Lama";
         statusPoli = "Baru";
@@ -558,5 +547,65 @@ public class DlgRegistrasiMandiri extends widget.Dialog {
         tanggalPeriksa.setText(DateTimeFormatter.ofPattern("yyyy-MM-dd").format(LocalDate.now()));
         namaPoli.setText(Sequel.cariIsiSmc("select poliklinik.nm_poli from poliklinik where poliklinik.kd_poli = ?", kdPoli));
         namaDokter.setText("");
+    }
+
+    private void loadPengaturanAPM() {
+        if (new File("./cache/pengaturanapmsmc.iyem").isFile()) {
+            try (FileReader fr = new FileReader("./cache/pengaturanapmsmc.iyem")) {
+                final ObjectMapper mapper = new ObjectMapper();
+                final JsonNode root = mapper.readTree(fr).path("pengaturanapmsmc");
+                final JsonNode decrypted = mapper.readTree(EnkripsiAES.decrypt(root.asText()));
+
+                if (decrypted.hasNonNull("kodePoliEksekutif")) {
+                    if (decrypted.path("kodePoliEksekutif").isArray()) {
+                        long count = StreamSupport.stream(decrypted.withArray("kodePoliEksekutif").spliterator(), false).count();
+                        if (count == 1) {
+                            kodePoliEksekutif = decrypted.withArray("kodePoliEksekutif").iterator().next().asText();
+                        } else {
+                            kodePoliEksekutif = "";
+                        }
+                    } else {
+                        kodePoliEksekutif = decrypted.path("kodePoliEksekutif").asText();
+                    }
+                }
+
+                if (decrypted.hasNonNull("printerBarcode")) {
+                    printerBarcode = decrypted.path("printerBarcode").asText();
+                }
+
+                if (decrypted.hasNonNull("printJumlahBarcode")) {
+                    printJumlahBarcode = decrypted.path("printJumlahBarcode").asInt(0);
+                }
+            } catch (Exception e) {
+                System.out.println("Notif : " + e);
+            }
+        } else {
+            kodePoliEksekutif = koneksiDB.KODEPOLIEKSEKUTIF().length > 0 ? koneksiDB.KODEPOLIEKSEKUTIF()[0] : "";
+            printerBarcode = koneksiDB.PRINTER_BARCODE();
+            printJumlahBarcode = koneksiDB.PRINTJUMLAHBARCODE();
+        }
+
+        if (kodePoliEksekutif.isBlank()) {
+            buttonCariPoli.setVisible(true);
+            poli.addWindowListener(new WindowAdapter() {
+                @Override
+                public void windowClosed(WindowEvent e) {
+                    if (poli.hasSelection()) {
+                        namaDokter.setText("");
+                        kdDokter = "";
+                        kdPoli = poli.getSelectedRow(0).toString();
+                        namaPoli.setText(poli.getSelectedRow(1).toString());
+                        poliBiaya = poli.getSelectedRow(2).toString();
+                        poliBiayaLama = poli.getSelectedRow(3).toString();
+                    }
+                }
+            });
+        } else {
+            buttonCariPoli.setVisible(false);
+            kdPoli = kodePoliEksekutif;
+            namaPoli.setText(Sequel.cariIsiSmc("select poliklinik.nm_poli from poliklinik where poliklinik.kd_poli = ?", kdPoli));
+            poliBiaya = Sequel.cariIsiSmc("select poliklinik.registrasi from poliklinik where poliklinik.kd_poli = ?", kdPoli);
+            poliBiayaLama = Sequel.cariIsiSmc("select poliklinik.registrasilama from poliklinik where poliklinik.kd_poli = ?", kdPoli);
+        }
     }
 }

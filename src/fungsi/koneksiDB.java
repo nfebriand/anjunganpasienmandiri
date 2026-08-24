@@ -16,13 +16,10 @@ import javax.swing.JOptionPane;
  * @author khanzasoft
  */
 public class koneksiDB {
-
     private static Connection connection = null;
     private static final Properties prop = new Properties();
     private static final MysqlDataSource dataSource = new MysqlDataSource();
 
-    public koneksiDB() {
-    }
 
     public static Connection condb() {
         try {
@@ -89,7 +86,7 @@ public class koneksiDB {
             prop.loadFromXML(fs);
             return prop.getProperty(key, defaultValue).trim();
         } catch (Exception e) {
-            return "";
+            return defaultValue;
         }
     }
 
@@ -103,7 +100,7 @@ public class koneksiDB {
             prop.loadFromXML(fs);
             return EnkripsiAES.decrypt(prop.getProperty(key, defaultValue)).trim();
         } catch (Exception e) {
-            return "";
+            return EnkripsiAES.decrypt(defaultValue).trim();
         }
     }
 
@@ -116,7 +113,7 @@ public class koneksiDB {
             prop.loadFromXML(fs);
             return prop.getProperty(key, defaultValue).trim();
         } catch (Exception e) {
-            return "";
+            return defaultValue;
         }
     }
 
@@ -130,7 +127,7 @@ public class koneksiDB {
             prop.loadFromXML(fs);
             return EnkripsiAES.decrypt(prop.getProperty(key, defaultValue)).trim();
         } catch (Exception e) {
-            return "";
+            return EnkripsiAES.decrypt(defaultValue).trim();
         }
     }
 
@@ -153,7 +150,7 @@ public class koneksiDB {
     public static int PRINTJUMLAHBARCODE() {
         return Integer.parseInt(rawAPM("PRINTJUMLAHBARCODE", "3"));
     }
-    
+
     public static int PRINTJUMLAHANTRIANFARMASI() {
         return Integer.parseInt(rawAPM("PRINTJUMLAHANTRIANFARMASI", "2"));
     }
@@ -189,16 +186,28 @@ public class koneksiDB {
         return rawAPM("TOMBOLDIMATIKAN").toLowerCase().replaceAll("\\s+", "").split(",");
     }
 
-    public static String KODEPOLIEKSEKUTIF() {
-        return rawAPM("KODEPOLIEKSEKUTIF");
+    public static String[] KODEPOLIEKSEKUTIF() {
+        return rawAPM("KODEPOLIEKSEKUTIF").split(",");
+    }
+
+    public static boolean JADIKANBOOKINGSURATKONTROL() {
+        return raw("JADIKANBOOKINGSURATKONTROL", "no").equalsIgnoreCase("yes");
     }
 
     public static boolean BOOKINGLANGSUNGREGISTRASI() {
         return raw("BOOKINGLANGSUNGREGISTRASI", "no").equalsIgnoreCase("yes");
     }
-    
+
     public static boolean PREVIEWHASILPRINT() {
         return rawAPM("PREVIEWHASILPRINT", "no").equalsIgnoreCase("yes");
+    }
+
+    public static boolean REGISTRASISATUJAMSEBELUMJAMPRAKTEK() {
+        return rawAPM("REGISTRASISATUJAMSEBELUMJAMPRAKTEK", "no").equalsIgnoreCase("yes");
+    }
+
+    public static String[] VALIDASIBIOMETRIKAKTIF() {
+        return rawAPM("VALIDASIBIOMETRIKAKTIF", "fingerprint,frista").toLowerCase().replaceAll("\\s+", "").split(",");
     }
 
     public static String HOST() {
@@ -275,5 +284,7 @@ public class koneksiDB {
 
     public static boolean AKTIFKANTRACKSQL() {
         return rawe("AKTIFKANTRACKSQL", "no").equalsIgnoreCase("yes");
+    }
+    public koneksiDB() {
     }
 }

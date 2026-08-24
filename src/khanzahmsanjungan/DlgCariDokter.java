@@ -116,13 +116,13 @@ public final class DlgCariDokter extends widget.Dialog {
     // End of variables declaration//GEN-END:variables
 
     public void tampil(String harikerja, String kodepoli) {
-        Valid.tabelKosong(tabMode);
+        Valid.tabelKosongSmc(tabMode);
         try (PreparedStatement ps = koneksi.prepareStatement(
             "select jadwal.kd_dokter, dokter.nm_dokter, spesialis.nm_sps, concat(left(jadwal.jam_mulai, 5), '-', left(jadwal.jam_selesai, 5)), " +
             "(select count(*) from reg_periksa where reg_periksa.kd_dokter = jadwal.kd_dokter and reg_periksa.kd_poli = jadwal.kd_poli and " +
             "reg_periksa.tgl_registrasi = current_date() and reg_periksa.stts != 'Batal') as jumlahdaftar from jadwal join dokter on " +
             "jadwal.kd_dokter = dokter.kd_dokter join spesialis on dokter.kd_sps = spesialis.kd_sps where jadwal.hari_kerja = ? and " +
-            "jadwal.kd_poli = ? order by jadwal.jam_mulai, dokter.nm_dokter"
+            "jadwal.kd_poli = ? order by spesialis.nm_sps, jadwal.jam_mulai, dokter.nm_dokter"
         )) {
             ps.setString(1, harikerja);
             ps.setString(2, kodepoli);
@@ -137,7 +137,7 @@ public final class DlgCariDokter extends widget.Dialog {
     }
 
     public void tampilDokterMapping(String kodeDokterBPJS) {
-        Valid.tabelKosong(tabMode);
+        Valid.tabelKosongSmc(tabMode);
         try (PreparedStatement ps = koneksi.prepareStatement(
             "select dokter.kd_dokter, dokter.nm_dokter from dokter join maping_dokter_dpjpvclaim on " +
             "dokter.kd_dokter = maping_dokter_dpjpvclaim.kd_dokter where dokter.status = '1' and " +

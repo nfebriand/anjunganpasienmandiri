@@ -1,33 +1,42 @@
 package khanzahmsanjungan;
 
+import AESsecurity.EnkripsiAES;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import fungsi.koneksiDB;
 import fungsi.sekuel;
 import fungsi.validasi;
 import java.awt.Cursor;
 import java.awt.event.KeyEvent;
+import java.io.File;
+import java.io.FileReader;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
-import javax.swing.JOptionPane;
+import java.util.Set;
+import java.util.StringJoiner;
 import javax.swing.border.TitledBorder;
 
 public class DlgCekDataPasien extends widget.Dialog {
-
     public static final int REGIST_MANDIRI = 1;
     public static final int CEKIN_BOOKING = 2;
-    
+
     private static final String TITLE_REGIST_MANDIRI = "::[ Registrasi Mandiri Poliklinik Eksekutif ]::";
     private static final String TITLE_CEKIN_BOOKING = "::[ Cek In Booking Registrasi ]::";
-    
+
     private final Connection koneksi = koneksiDB.condb();
     private final sekuel Sequel = new sekuel();
     private final validasi Valid = new validasi();
-    private final String KODEPOLIEKSEKUTIF = koneksiDB.KODEPOLIEKSEKUTIF();
     private final DlgRegistrasiMandiri mandiri;
-    
+
     private int flag = -1;
+    private String printerBarcode = "";
+    private int printJumlahBarcode = 0;
+    private final Set<String> kodePoliEksekutif = new HashSet<>();
 
     public DlgCekDataPasien(java.awt.Frame parent, boolean modal) {
         super(parent, modal);
@@ -68,7 +77,7 @@ public class DlgCekDataPasien extends widget.Dialog {
         panelAtas.setPreferredSize(new java.awt.Dimension(500, 100));
         panelAtas.setLayout(new java.awt.FlowLayout(java.awt.FlowLayout.CENTER, 0, 10));
 
-        flatLabel1.setIcon(new javax.swing.ImageIcon(getClass().getResource("/picture/logocokro (2).png"))); // NOI18N
+        flatLabel1.setIcon(new javax.swing.ImageIcon(getClass().getResource("/picture/smc-lg.png"))); // NOI18N
         panelAtas.add(flatLabel1);
 
         getContentPane().add(panelAtas, java.awt.BorderLayout.PAGE_START);
@@ -243,6 +252,7 @@ public class DlgCekDataPasien extends widget.Dialog {
     }//GEN-LAST:event_NoRMPasienKeyPressed
 
     private void formWindowActivated(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowActivated
+        loadPengaturanAPM();
         NoRMPasien.setText("");
         NoRMPasien.requestFocus();
     }//GEN-LAST:event_formWindowActivated
@@ -266,13 +276,13 @@ public class DlgCekDataPasien extends widget.Dialog {
 
     public void setFlag(int flag) {
         if (flag <= 0) {
-            JOptionPane.showMessageDialog(null, "Flag tidak valid..!!");
+            Valid.popupPeringatanDialog("Flag tidak valid..!!");
             return;
         }
-        
+
         this.flag = flag;
         TitledBorder border = (TitledBorder) panelTengah.getBorder();
-        
+
         switch (flag) {
             case REGIST_MANDIRI:
                 border.setTitle(TITLE_REGIST_MANDIRI);
@@ -284,18 +294,18 @@ public class DlgCekDataPasien extends widget.Dialog {
                 border.setTitle(TITLE_REGIST_MANDIRI);
                 break;
         }
-        
+
         repaint();
     }
-    
+
     private void cek() {
         this.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
         if (NoRMPasien.getText().isBlank()) {
-            JOptionPane.showMessageDialog(null, "Isian masih kosong..!!");
+            Valid.popupPeringatanDialog("Isian masih kosong..!!", 3);
         } else {
             String noRM = Sequel.cariIsiSmc("select pasien.no_rkm_medis from pasien where (pasien.no_rkm_medis = ? or trim(pasien.no_ktp) = ?)", NoRMPasien.getText().trim(), NoRMPasien.getText().trim());
             if (noRM.isBlank()) {
-                JOptionPane.showMessageDialog(null, "Data pasien tidak ditemukan..!!");
+                Valid.popupGagalDialog("Data pasien tidak ditemukan..!!", 5);
             } else {
                 switch (flag) {
                     case CEKIN_BOOKING:
@@ -315,47 +325,89 @@ public class DlgCekDataPasien extends widget.Dialog {
         formWindowActivated(null);
         this.setCursor(Cursor.getDefaultCursor());
     }
-    
+
     private void cekBooking(String noRM) {
+        StringJoiner sj = new StringJoiner(", ");
+        if (!kodePoliEksekutif.isEmpty()) {
+            for (int i = 0; i < kodePoliEksekutif.size(); i++) {
+                sj.add("?");
+            }
+        }
         try (PreparedStatement ps = koneksi.prepareStatement(
             "select b.no_rawat, b.status, r.stts, exists(select * from pemeriksaan_ralan as p where p.no_rawat = b.no_rawat) as ada_pemeriksaan from " +
             "booking_registrasi as b join reg_periksa as r on b.no_rawat = r.no_rawat where b.no_rkm_medis = ? and b.tanggal_periksa = current_date() " +
-            (KODEPOLIEKSEKUTIF.isBlank() ? "" : "and b.kd_poli = ?")
+            (sj.length() == 0 ? "" : "and b.kd_poli in (" + sj.toString() + ")")
         )) {
-            ps.setString(1, noRM);
-            if (!KODEPOLIEKSEKUTIF.isBlank()) {
-                ps.setString(2, KODEPOLIEKSEKUTIF);
+            int p = 0;
+            ps.setString(++p, noRM);
+            if (!kodePoliEksekutif.isEmpty()) {
+                for (String s : kodePoliEksekutif) {
+                    ps.setString(++p, s);
+                }
             }
+
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.first()) {
                     Map<String, Object> param = new HashMap<>();
                     param.put("norawat", rs.getString("no_rawat"));
                     param.put("namars", Sequel.cariIsiSmc("select setting.nama_instansi from setting limit 1"));
                     param.put("kotars", Sequel.cariIsiSmc("select setting.kabupaten from setting limit 1"));
+
                     if (!rs.getString("stts").equals("Belum") || rs.getBoolean("ada_pemeriksaan")) {
-                        JOptionPane.showMessageDialog(null, "Anda sudah menerima pelayanan pada hari ini..!!\nSilahkan konfirmasi ke petugas.", "Gagal", JOptionPane.ERROR_MESSAGE);
+                        Valid.popupInfoDialog("Anda sudah menerima pelayanan pada hari ini..!!\nSilahkan konfirmasi ke petugas.");
                     } else if (rs.getString("status").equals("Checkin")) {
-                        if (koneksiDB.PRINTJUMLAHBARCODE() > 0) {
-                            if (JOptionPane.showConfirmDialog(null, "Anda sudah melakukan checkin pada hari ini\nApakah mau mencetak barcode?", "Konfirmasi", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE) == JOptionPane.YES_OPTION) {
-                                Valid.printReportSmc("rptBarcodeRawatAPM.jasper", "report", "::[ Barcode Perawatan ]::", param, koneksiDB.PRINTER_BARCODE(), koneksiDB.PRINTJUMLAHBARCODE());
-                                JOptionPane.showMessageDialog(null, "Barcode berhasil dicetak..!!", "Berhasil", JOptionPane.INFORMATION_MESSAGE);
+                        if (printJumlahBarcode > 0) {
+                            if (Valid.popupKonfirmDialog("Anda sudah melakukan checkin pada hari ini\nApakah mau mencetak barcode?") == validasi.POPUP_YA) {
+                                Valid.printReportSmc("rptBarcodeRawatAPM.jasper", "report", "::[ Barcode Perawatan ]::", param, printerBarcode, printJumlahBarcode);
+                                Valid.popupInfoDialog("Barcode berhasil dicetak..!!", 5);
                             }
                         } else {
-                            JOptionPane.showMessageDialog(null, "Anda sudah melakukan checkin pada hari ini..!!");
+                            Valid.popupInfoDialog("Anda sudah melakukan checkin pada hari ini..!!");
                         }
                     } else {
                         Sequel.mengupdateSmc("reg_periksa", "jam_reg = current_time()", "no_rawat = ?", rs.getString("no_rawat"));
                         Sequel.mengupdateSmc("booking_registrasi", "waktu_kunjungan = now(), status = 'Checkin'", "no_rawat = ?", rs.getString("no_rawat"));
-                        JOptionPane.showMessageDialog(null, "Check in berhasil..!!", "Berhasil", JOptionPane.INFORMATION_MESSAGE);
-                        Valid.printReportSmc("rptBarcodeRawatAPM.jasper", "report", "::[ Barcode Perawatan ]::", param, koneksiDB.PRINTER_BARCODE(), koneksiDB.PRINTJUMLAHBARCODE());
+                        Valid.popupInfoDialog("Check in berhasil..!!", 5);
+                        Valid.printReportSmc("rptBarcodeRawatAPM.jasper", "report", "::[ Barcode Perawatan ]::", param, printerBarcode, printJumlahBarcode);
                     }
                 } else {
-                    JOptionPane.showMessageDialog(null, "Maaf, jadwal booking untuk hari ini tidak ditemukan\nSilahkan konfirmasi ke pendaftaran..!!");
+                    Valid.popupPeringatanDialog("Maaf, jadwal booking untuk hari ini tidak ditemukan\nSilahkan konfirmasi ke pendaftaran..!!");
                 }
             }
         } catch (Exception e) {
             System.out.println("Notif : " + e);
-            JOptionPane.showMessageDialog(null, "Terjadi kesalahan pada saat mencari data pasien\nSilahkan konfirmasi ke pendaftaran..!!");
+            Valid.popupGagalDialog("Terjadi kesalahan pada saat mencari data booking\nSilahkan konfirmasi ke pendaftaran..!!");
+        }
+    }
+
+    private void loadPengaturanAPM() {
+        if (new File("./cache/pengaturanapmsmc.iyem").isFile()) {
+            try (FileReader fr = new FileReader("./cache/pengaturanapmsmc.iyem")) {
+                final ObjectMapper mapper = new ObjectMapper();
+                final JsonNode root = mapper.readTree(fr).path("pengaturanapmsmc");
+                final JsonNode decrypted = mapper.readTree(EnkripsiAES.decrypt(root.asText()));
+
+                if (decrypted.hasNonNull("kodePoliEksekutif")) {
+                    for (JsonNode item : decrypted.withArray("kodePoliEksekutif")) {
+                        kodePoliEksekutif.add(item.asText(""));
+                    }
+                }
+
+                if (decrypted.hasNonNull("printerBarcode")) {
+                    printerBarcode = decrypted.path("printerBarcode").asText();
+                }
+
+                if (decrypted.hasNonNull("printJumlahBarcode")) {
+                    printJumlahBarcode = decrypted.path("printJumlahBarcode").asInt();
+                }
+            } catch (Exception e) {
+                System.out.println("Notif : " + e);
+            }
+        } else {
+            kodePoliEksekutif.clear();
+            kodePoliEksekutif.addAll(Arrays.asList(koneksiDB.KODEPOLIEKSEKUTIF()));
+            printerBarcode = koneksiDB.PRINTER_BARCODE();
+            printJumlahBarcode = koneksiDB.PRINTJUMLAHBARCODE();
         }
     }
 }
